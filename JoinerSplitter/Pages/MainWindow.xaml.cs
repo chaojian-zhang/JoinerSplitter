@@ -476,11 +476,11 @@ namespace JoinerSplitter.Pages
         private async void OpenJob(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog
-                      {
-                          Filter = "JoinerSplitter job file (*.jsj)|*.jsj",
-                          DefaultExt = ".jsj",
-                          Multiselect = false
-                      };
+            {
+                Filter = "JoinerSplitter job file (*.jsj)|*.jsj",
+                DefaultExt = ".jsj",
+                Multiselect = false,
+            };
 
             var result = dlg.ShowDialog();
             if (result == false)
@@ -604,7 +604,21 @@ namespace JoinerSplitter.Pages
             {
                 await FFMpeg.Instance.DoJob(
                     job,
-                    cur => { Dispatcher.Invoke(() => { progress.Progress.Value = cur; }); },
+                    cur =>
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            progress.Progress.Value = cur.Current;
+                            if (cur.Estimated.TotalHours >= 1)
+                            {
+                                progress.EstimatedTime.Text = $"{Math.Floor(cur.Estimated.TotalHours)}:{cur.Estimated.Minutes:00}:{cur.Estimated.Seconds:00}";
+                            }
+                            else
+                            {
+                                progress.EstimatedTime.Text = $"{cur.Estimated.Minutes:00}:{cur.Estimated.Seconds:00}";
+                            }
+                        });
+                    },
                     progress.CancellationToken);
             }
             catch (Exception ex)
@@ -632,7 +646,7 @@ namespace JoinerSplitter.Pages
         {
             if (string.IsNullOrWhiteSpace(Data.CurrentJob.JobFilePath))
             {
-                SaveJobAs();
+                await SaveJobAs();
             }
             else
             {
@@ -640,14 +654,19 @@ namespace JoinerSplitter.Pages
             }
         }
 
-        private async void SaveJobAs(object sender = null, RoutedEventArgs e = null)
+        private async void OnSaveJobAs(object sender = null, RoutedEventArgs e = null)
+        {
+            await SaveJobAs();
+        }
+
+        private async Task SaveJobAs()
         {
             var dlg = new SaveFileDialog
-                      {
-                          Filter = "JoinerSplitter job file (*.jsj)|*.jsj",
-                          DefaultExt = ".jsj",
-                          OverwritePrompt = true,
-                      };
+            {
+                Filter = "JoinerSplitter job file (*.jsj)|*.jsj",
+                DefaultExt = ".jsj",
+                OverwritePrompt = true,
+            };
             if (!string.IsNullOrWhiteSpace(Data.CurrentJob.JobFilePath))
             {
                 dlg.FileName = Path.GetFileNameWithoutExtension(Data.CurrentJob.JobFilePath);
